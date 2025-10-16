@@ -381,9 +381,10 @@ def main():
         args.img_output_directory,
         WORD2IDX,
         ACTION2IDX,
-        color_dictionary,
-        noun_dictionary,
-        analyze_if_correct=args.analyze_if_correct
+        [None] + color_dictionary,
+        [None] + noun_dictionary,
+        analyze_if_correct=args.analyze_if_correct,
+        render_supports=args.render_supports
     )
 
 
