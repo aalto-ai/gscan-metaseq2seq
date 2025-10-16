@@ -7,6 +7,7 @@ import math
 # Import pillow and matplotlib first before torch pulls in a different libc
 import matplotlib.pyplot as plt
 from PIL import Image
+import gc
 
 import torch
 import torch.nn.functional as F
@@ -32,7 +33,7 @@ from gscan_metaseq2seq.util.dataset import (
     ReorderSupportsByDistanceDataset,
 )
 from gscan_metaseq2seq.util.load_data import load_data, load_data_directories
-from gscan_metaseq2seq.util.logging import LoadableCSVLogger
+from gscan_metaseq2seq.util.logging import LoadableCSVLogger, ConsoleLogger
 from gscan_metaseq2seq.util.scheduler import transformer_optimizer_config
 from gscan_metaseq2seq.util.padding import pad_to
 
@@ -688,7 +689,7 @@ def render_one_state(
         instruction, state, word2idx, colors, nouns, need_target=False
     )
 
-    world = reinitialize_world(world, situation, vocabulary)
+    reinitialize_world(world, situation, vocabulary)
 
     img = world.render(mode="rgb_array")[::image_downsample, ::image_downsample] / 255.0
 
@@ -702,8 +703,8 @@ class MetalearningImageRenderingDemonstrationsDataset(Dataset):
         super().__init__()
         self.train_demonstrations = train_demonstrations
         self.word2idx = word2idx
-        self.colors = sorted(colors)
-        self.nouns = sorted(nouns)
+        self.colors = [None] + sorted(colors)
+        self.nouns = [None] + sorted(nouns)
 
         vocabulary = create_vocabulary()
         world = create_world(vocabulary)
@@ -1059,7 +1060,7 @@ def main():
     train_dataloader = DataLoader(
         meta_train_dataset,
         batch_size=args.train_batch_size,
-        num_workers=1,  # args.dataloader_ncpus,
+        num_workers=args.dataloader_ncpus,
         prefetch_factor=4,
     )
 
@@ -1089,7 +1090,7 @@ def main():
 
     callbacks = [
         pl.callbacks.LearningRateMonitor(),
-        ModelCheckpoint(save_last=True, save_top_k=0),
+        ModelCheckpoint(save_last=True, save_top_k=0, save_on_train_epoch_end=True),
     ]
 
     if args.ema:
@@ -1103,14 +1104,14 @@ def main():
             ),
             LoadableCSVLogger(
                 logs_root_dir, version=most_recent_version, flush_logs_every_n_steps=100
-            ),
+            )
         ],
         callbacks=callbacks,
         max_steps=iterations,
         num_sanity_val_steps=1,
         accelerator="gpu",
         devices=1,
-        precision="16-mixed",
+        precision="bf16-mixed" if torch.cuda.is_bf16_supported() else "16-mixed",
         default_root_dir=logs_root_dir,
         accumulate_grad_batches=args.batch_size_mult,
         enable_progress_bar=sys.stdout.isatty() or args.enable_progress,
@@ -1162,6 +1163,7 @@ def main():
                 ),
                 (None, 0.0, pad_word, pad_action, pad_word, pad_action),
             ),
+            num_workers=2,
             batch_size=max([args.train_batch_size, args.valid_batch_size]),
             pin_memory=True,
         )

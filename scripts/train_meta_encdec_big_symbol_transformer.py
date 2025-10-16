@@ -1227,7 +1227,7 @@ def main():
         num_sanity_val_steps=1,
         accelerator="gpu",
         devices=1,
-        precision=32, # "bf16-mixed" if torch.cuda.is_bf16_supported() else "16-mixed",
+        precision="bf16-mixed" if torch.cuda.is_bf16_supported() else "16-mixed",
         default_root_dir=logs_root_dir,
         accumulate_grad_batches=args.batch_size_mult,
         enable_progress_bar=sys.stdout.isatty() or args.enable_progress,

@@ -243,8 +243,8 @@ class ImageRenderingDemonstrationsDataset(Dataset):
         super().__init__()
         self.train_demonstrations = train_demonstrations
         self.word2idx = word2idx
-        self.colors = sorted(colors)
-        self.nouns = sorted(nouns)
+        self.colors = [None] + sorted(colors)
+        self.nouns = [None] + sorted(nouns)
 
         vocabulary = create_vocabulary()
         world = create_world(vocabulary)
@@ -264,7 +264,7 @@ class ImageRenderingDemonstrationsDataset(Dataset):
             need_target=False,
         )
 
-        self.world = reinitialize_world(self.world, situation, self.vocabulary)
+        reinitialize_world(self.world, situation, self.vocabulary)
 
         img = (
             self.world.render(mode="rgb_array")[
@@ -428,7 +428,7 @@ def main():
     parser.add_argument("--pad-actions-to", type=int, default=128)
     parser.add_argument("--pad-state-to", type=int, default=36)
     parser.add_argument("--log-dir", type=str, default="logs")
-    parser.add_argument("--dataloader-ncpus", type=int, default=1)
+    parser.add_argument("--dataloader-ncpus", type=int, default=6)
     parser.add_argument(
         "--state-profile", choices=("gscan", "reascan"), default="gscan"
     )
@@ -518,7 +518,7 @@ def main():
 
     pl.seed_everything(0)
     train_dataloader = DataLoader(
-        train_dataset, batch_size=args.train_batch_size, pin_memory=True
+        train_dataset, batch_size=args.train_batch_size, pin_memory=True, num_workers=args.dataloader_ncpus
     )
 
     check_val_opts = {}
@@ -555,7 +555,7 @@ def main():
         num_sanity_val_steps=10,
         accelerator="gpu" if torch.cuda.is_available() else None,
         devices=1 if torch.cuda.is_available() else 0,
-        precision=args.precision if torch.cuda.is_available() else 32,
+        precision="bf16-mixed" if torch.cuda.is_bf16_supported() else "16-mixed", # args.precision if torch.cuda.is_available() else 32,
         default_root_dir=logs_root_dir,
         accumulate_grad_batches=args.batch_size_mult,
         enable_progress_bar=sys.stdout.isatty() or args.enable_progress,
@@ -586,6 +586,7 @@ def main():
                 ),
                 batch_size=max([args.train_batch_size, args.valid_batch_size]),
                 pin_memory=True,
+                num_workers=2
             )
             for demonstrations in valid_demonstrations_dict.values()
         ],
