@@ -562,8 +562,7 @@ MATCH_CONFIGS = {
         "model": "meta_symbol_encdec_big_transformer",
         "headline": "meta_gscan",
         "dropout": "0.1",
-        "ml_d_limit": "16",
-        "tag": "no_reorder_flag"
+        "ml_d_limit": "16"
     },
     "baseline_reascan_gandr": {
         "dataset": "gandr_baseline_reascan",
@@ -606,11 +605,43 @@ MATCH_CONFIGS = {
     },
     "gandr": {"dataset": "gandr", "headline": "meta_gscan"},
     "gandr_coverage": {"dataset": "gandr_coverage", "headline": "meta_gscan"},
+    "gandr_coverage_img": {
+        "dataset": "gandr_coverage_fixed",
+        "model": "meta_img_encdec_big_transformer",
+        "headline": "meta_gscan",
+        "tag": "none",
+        "dropout": "0.1",
+        "ml_d_limit": "16",
+    },
+    "gandr_coverage_pp_img": {
+        "dataset": "gandr_coverage_paraphrased_fixed",
+        "model": "meta_img_encdec_big_transformer",
+        "headline": "meta_gscan",
+        "tag": "none",
+        "dropout": "0.1",
+        "ml_d_limit": "16",
+    },
     "gandr_coverage_pp": {"dataset": "gandr_coverage_paraphrased", "headline": "meta_gscan"},
     "gscan_oracle_full": {"dataset": "metalearn_allow_any", "headline": "meta_gscan"},
     "coverage_retrieval": {
         "dataset": "coverage_retrieval",
         "model": "meta_symbol_encdec_big_transformer",
+        "headline": "meta_gscan",
+        "tag": "none",
+        "dropout": "0.1",
+        "ml_d_limit": "16",
+    },
+    "coverage_retrieval_img": {
+        "dataset": "coverage_retrieval",
+        "model": "meta_img_encdec_big_transformer",
+        "headline": "meta_gscan",
+        "tag": "none",
+        "dropout": "0.1",
+        "ml_d_limit": "16",
+    },
+    "coverage_retrieval_pp_img": {
+        "dataset": "coverage_retrieval_paraphrased",
+        "model": "meta_img_encdec_big_transformer",
         "headline": "meta_gscan",
         "tag": "none",
         "dropout": "0.1",
