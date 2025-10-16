@@ -282,23 +282,24 @@ def make_gscan_generate_targets_closure(
     return compute_targets
 
 
-def make_gscan_format_output_closure(IDX2WORD):
+def make_gscan_format_output_closure(WORD2IDX, ACTION2IDX, IDX2WORD, IDX2ACTION):
     def format_output(inputs, targets, sample_scores):
         (generated_instructions, generated_targets, scores) = list(zip(*sample_scores))
         query_state, query_instruction = inputs
 
-        if False:
+        if True:
             import pprint
             print([IDX2WORD[w] for w in query_instruction.cpu().numpy()])
+            pad_word = WORD2IDX["[pad]"]
+            pad_act = ACTION2IDX["[pad]"]
             pprint.pprint([
-                [
-                    IDX2WORD[w] for w in s
-                ]
-                for s in generated_instructions
+                (" ".join([
+                    IDX2WORD[w] for w in s if w != pad_word
+                ]), " ".join([
+                    IDX2ACTION[w] for w in a if w != pad_act
+                ]))
+                for s, a in zip(generated_instructions, generated_targets)
             ])
-
-            import pdb
-            pdb.set_trace()
 
         return (
             query_instruction.numpy(),
@@ -333,8 +334,9 @@ def try_gen_instructions(
     decode_len,
     device="cpu",
     no_query_overlap=False,
+    allow_targets_overlap=False,
     deduplicate_by_output=False,
-    no_sort=False
+    no_sort=False,
     demonstrations_limit=None
 ):
     sampled_instructions = instruction_gen_closure(inputs, sample_n)
@@ -377,7 +379,7 @@ def try_gen_instructions(
         raise SamplingError()
 
     # Note: we are kind of assuming the gscan dataset here
-    original_pred_targets = target_gen_closure(inputs[1], inputs, targets.shape[-1]).cpu()
+    original_pred_targets = target_gen_closure(inputs[1], inputs, max(targets.shape[-1], decode_len)).cpu()
 
     per_id_results = defaultdict(list)
 
@@ -427,7 +429,7 @@ def try_gen_instructions(
             batch_id = batch_id.item()
 
             # Filter out demonstrations that do not give any new information
-            if (targets[batch_id] == predicted_target).all(axis=-1):
+            if not allow_targets_overlap and (targets[batch_id] == predicted_target).all(axis=-1):
                 continue
 
             # Also filter out demonstrations which match what we would have predicted
@@ -492,6 +494,7 @@ def generate_instructions_and_rank(
     decode_len,
     device="cpu",
     no_query_overlap=False,
+    allow_targets_overlap=False,
     deduplicate_by_output=False,
     no_sort=False,
     demonstrations_limit=None
@@ -513,6 +516,7 @@ def generate_instructions_and_rank(
                     decode_len,
                     device=device,
                     no_query_overlap=no_query_overlap,
+                    allow_targets_overlap=allow_targets_overlap,
                     deduplicate_by_output=deduplicate_by_output,
                     no_sort=no_sort,
                     demonstrations_limit=demonstrations_limit
@@ -693,6 +697,7 @@ def gscan_make_closures(args, dictionaries, datasets, extra_data):
     pad_word = WORD2IDX["[pad]"]
 
     IDX2WORD = {i: w for w, i in WORD2IDX.items()}
+    IDX2ACTION = {i: w for w, i in ACTION2IDX.items()}
 
     # Punching through the abstraction a bit, we reach
     # through the MapDataset and PaddingDataset to get the underlying
@@ -821,7 +826,7 @@ def gscan_make_closures(args, dictionaries, datasets, extra_data):
         make_gscan_generate_targets_closure(
             transformer_model, pad_word, pad_action, device=args.device
         ),
-        make_gscan_format_output_closure(IDX2WORD),
+        make_gscan_format_output_closure(WORD2IDX, ACTION2IDX, IDX2WORD, IDX2ACTION),
     )
 
 
@@ -1533,6 +1538,7 @@ def main():
     parser.add_argument("--offset", type=float, default=0)
     parser.add_argument("--limit", type=float, default=None)
     parser.add_argument("--resume", action="store_true")
+    parser.add_argument("--allow-targets-overlap", action="store_true")
     parser.add_argument("--no-query-overlap", action="store_true")
     parser.add_argument("--deduplicate-by-outputs", action="store_true")
     parser.add_argument("--no-sort", action="store_true")
@@ -1652,6 +1658,7 @@ def main():
                     decode_len=args.decode_to,
                     device=args.device,
                     no_query_overlap=args.no_query_overlap,
+                    allow_targets_overlap=args.allow_targets_overlap,
                     deduplicate_by_output=args.deduplicate_by_outputs,
                     no_sort=args.no_sort,
                     demonstrations_limit=args.demonstrations_limit
