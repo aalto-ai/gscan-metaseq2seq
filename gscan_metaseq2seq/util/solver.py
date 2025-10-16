@@ -185,7 +185,7 @@ def state_to_situation(
             query_instruction, word2idx, colors, nouns
         )
         target_object = find_target_object(
-            state, size, color, noun, idx2word, colors, nouns
+            state, size, color, noun, idx2word, colors[1:], nouns[1:]
         )
     else:
         target_object = None
