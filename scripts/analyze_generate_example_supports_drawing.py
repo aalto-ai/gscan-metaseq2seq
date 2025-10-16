@@ -122,6 +122,7 @@ def plot_at_index(
         noun_dictionary,
         need_target=analyze_if_correct
     )
+    query_actions = [idx2action[a] for a in examples[index][1]]
     query_target_object = situation.target_object
 
     world = reinitialize_world(world, situation, vocabulary)
@@ -134,6 +135,7 @@ def plot_at_index(
 
     print(index)
     print(" ".join([w for w in instr if w != "[pad]"]))
+    print(" ".join([w for w in query_actions if w != "[pad]"]))
 
     support_states = examples[index][3]
     support_states = (
