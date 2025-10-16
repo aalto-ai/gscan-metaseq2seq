@@ -106,7 +106,8 @@ def plot_at_index(
     action2idx,
     color_dictionary,
     noun_dictionary,
-    analyze_if_correct=False
+    analyze_if_correct=False,
+    render_supports=False
 ):
     idx2word = [w for w in word2idx]
     idx2action = [w for w in action2idx]
