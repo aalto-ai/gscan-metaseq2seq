@@ -184,6 +184,25 @@ def plot_at_index(
         )
     ]
 
+    if render_supports:
+        for i, ((demo_instr, demo_acts, demo_state, demo_score), (correct, valid), relevant) in enumerate(sorted_instrs):
+            support_instr, support_situation = state_to_situation(
+                demo_instr,
+                demo_state,
+                word2idx,
+                color_dictionary,
+                noun_dictionary,
+                need_target=False
+            )
+
+            support_world = create_world(vocabulary)
+            support_world = reinitialize_world(support_world, support_situation, vocabulary)
+            plt.imshow(support_world.render(mode="rgb_array"))
+            plt.axis("off")
+            os.makedirs(output_dir, exist_ok=True)
+            plt.savefig(os.path.join(output_dir, f"{dataset_name}_{index}.support-{i}.pdf"))
+            plt.clf()
+
     for (
         (demo_instr, demo_acts, demo_state, demo_score),
         (correct, valid),
@@ -337,6 +356,7 @@ def main():
     parser.add_argument("--split", required=True)
     parser.add_argument("--index", type=int, required=True)
     parser.add_argument("--analyze-if-correct", action="store_true")
+    parser.add_argument("--render-supports", action="store_true")
     args = parser.parse_args()
 
     (
