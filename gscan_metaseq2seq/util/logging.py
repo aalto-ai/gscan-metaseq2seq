@@ -49,6 +49,10 @@ class LoadableCSVLogger(CSVLogger):
         if self.metrics:
             trainer.callback_metrics = self.metrics[-1]
 
+    def _check_log_dir_exists(self):
+        # override this function to ensure that the metrics file is not dropped
+        return
+
     @property
     @rank_zero_experiment
     def experiment(self):
@@ -57,17 +61,23 @@ class LoadableCSVLogger(CSVLogger):
         else:
             load_csv = False
 
-        experiment = super().experiment
+        metrics_file_path = os.path.join(self.log_dir, "metrics.csv")
+        metrics = []
 
         if load_csv:
             try:
-                with open(experiment.metrics_file_path, "r", newline="") as f:
+                print(f"Try to load experiment {metrics_file_path}")
+                with open(metrics_file_path, "r", newline="") as f:
                     reader = csv.DictReader(f)
-                    experiment.metrics = list(reader)
+                    metrics = list(reader)
                     print(
-                        f"Restored CSV ({len(experiment.metrics)} lines to step {experiment.metrics[-1]['step']}) logs from {experiment.metrics_file_path}"
+                        f"Restored CSV ({len(metrics)} lines to step {metrics[-1]['step']}) logs from {metrics_file_path}"
                     )
             except IOError:
                 print(f"No csv log files to restore")
+
+        experiment = super().experiment
+        if len(metrics) > 0:
+            experiment.metrics = metrics
 
         return experiment
