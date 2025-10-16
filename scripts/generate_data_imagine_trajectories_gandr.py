@@ -339,7 +339,7 @@ def gandr_like_search(
         ]
 
         for i, (supports, distances) in enumerate(near_neighbour_supports_batch):
-            if False:
+            if True:
                 print("Command:", " ".join([
                     IDX2WORD[w] for w in instruction[i].numpy()
                     if w != pad_word_idx
