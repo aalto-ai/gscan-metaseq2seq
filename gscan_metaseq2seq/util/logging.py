@@ -2,7 +2,8 @@ import csv
 import os
 
 from pytorch_lightning.loggers import CSVLogger
-from pytorch_lightning.loggers.logger import rank_zero_experiment
+from pytorch_lightning.loggers.logger import Logger, rank_zero_experiment
+import tqdm
 
 
 def get_most_recent_version(experiment_dir):
@@ -15,6 +16,29 @@ def get_most_recent_version(experiment_dir):
         )
     ]
     return sorted(versions, key=lambda x: int(x.split("_")[1]))[-1]
+
+
+class ConsoleLogger(Logger):
+    @property
+    def name(self):
+        return "MyLogger"
+
+    @property
+    def version(self):
+        # Return the experiment version, int or str.
+        return "0.1"
+
+    @rank_zero_experiment
+    def log_hyperparams(self, params,):
+        tqdm.write(f"{params}\n")
+
+    @rank_zero_experiment
+    def log_metrics(self, metrics, step):
+        tqdm.write(f"{step} - {metrics}")
+
+    @rank_zero_experiment
+    def finalize(self, status):
+        pass
 
 
 class LoadableCSVLogger(CSVLogger):
