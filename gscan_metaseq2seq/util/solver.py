@@ -120,8 +120,8 @@ def segment_instruction(query_instruction, word2idx, colors, nouns):
         ]
     ]
     size_words = [word2idx[w] for w in ["small", "big"]]
-    color_words = [word2idx[w] for w in list(colors)]
-    noun_words = [word2idx[w] for w in list(nouns) if w in word2idx]
+    color_words = [word2idx[w] for w in list(colors) if w is not None]
+    noun_words = [word2idx[w] for w in list(nouns) if w in word2idx if w is not None]
 
     query_verb_words = [
         v for v in verb_words if all([w in query_instruction for w in v])
